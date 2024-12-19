@@ -5,6 +5,7 @@ import java.util.Scanner;
 public class Attacks {
     public static void main(String[] args) {
     }
+
     public static void specialAbilities(Scanner userInput) {
         String option;
         do {
@@ -31,24 +32,6 @@ public class Attacks {
         } while (!option.equals("x"));
     }
 
-    public static List<int[][]> generateShips() {
-        List<int[][]> generateShips = new ArrayList<>();
-
-        int[][] ship_1 = {{0, 0}, {0, 1}, {0, 2}};
-        int[][] ship_2 = {{1, 0}, {1, 1}, {2, 1}, {3, 1}, {4, 1}};
-        int[][] ship_3 = {{3, 3}, {3, 4}, {4, 4}, {5, 4}};
-        int[][] ship_4 = {{4, 0}, {4, 1}};
-        int[][] ship_5 = {{5, 0}};
-        int[][] ship_6 = {{6, 0}, {6, 1}, {6, 2}, {6, 3}, {7, 2}, {7, 3}, {7, 4}};
-
-        generateShips.add(ship_1);
-        generateShips.add(ship_2);
-        generateShips.add(ship_3);
-        generateShips.add(ship_4);
-        generateShips.add(ship_5);
-        generateShips.add(ship_6);
-        return generateShips;
-    }
 
     public static void attack(Scanner userInput) {
         int[][] playerBoard1 = new int[10][10];
@@ -62,19 +45,20 @@ public class Attacks {
             while (!isValidPlacement) {
                 ASCII.showShips(sum);
                 System.out.printf("Choose grid placement [10x10] (ex: A1) - Ship %s/6:  ", sum);
-                String choice = userInput.next().toUpperCase();
-                char column = choice.charAt(0);
+
+                String choice = userInput.next().toLowerCase();
+                int column = choice.charAt(0) - 'a';
                 int row = Integer.parseInt(choice.substring(1)) - 1;
-                if (row < 0 || row >= 10 || letters.indexOf(column) == -1) {
+
+                if (row < 0 || row >= 10 || column < 0 || column >= 10) {
                     System.out.println("Invalid input, please try again.");
                     continue;
                 }
-                System.out.printf("Orientation (horizontally/vertically) - Ship %s/6:  ", sum);
-                String orientation = userInput.next().toLowerCase();
 
-                int columnIndex = letters.indexOf(column);
-                if (isValidPlacement(ship, playerBoard1, row, columnIndex, orientation)) {
-                    placeShip(ship, playerBoard1, row, columnIndex, orientation);
+                System.out.printf("Orientation [LEFT/UP/DOWN/RIGHT] - Ship %s/6:  ", sum);
+                String orientation = userInput.next().substring(0, 1).toLowerCase();
+
+                if (placeShip(ship, playerBoard1, row, column, orientation)) {
                     isValidPlacement = true;
                     sum++;
                 } else {
@@ -84,35 +68,88 @@ public class Attacks {
         }
     }
 
-    public static boolean isValidPlacement(int[][] ship, int[][] board, int row, int column, String orientation) {
-        for (int[] part : ship) {
-            int dx = part[0];
-            int dy = part[1];
-            int newX = row + (orientation.equals("v") ? dy : dx);
-            int newY = column + (orientation.equals("v") ? dx : dy);
+    public static boolean placeShip(int[][] ship, int[][] board, int row, int column, String orientation) {
+        int[][] adjustedShip = new int[ship.length][2];
 
-            if (newX < 0 || newX >= 10 || newY < 0 || newY >= 10) {
-                return false;
-            }
-            if (board[newX][newY] != 0) {
+        rotateShip(adjustedShip, ship, row, column, orientation);
+
+        for (int[] coord : adjustedShip) {
+            int rowV = coord[0];
+            int columnV = coord[1];
+
+            if (rowV < 0 || rowV >= 10 || columnV < 0 || columnV >= 10 || board[rowV][columnV] != 0) {
                 return false;
             }
         }
+
+        for (int[] coord : adjustedShip) {
+            board[coord[0]][coord[1]] = 1;
+        }
+
+        printBoard(board);
         return true;
     }
 
-    public static void placeShip(int[][] ship, int[][] board, int row, int column, String orientation) {
-        for (int[] part : ship) {
-            int dx = part[0];
-            int dy = part[1];
-            int newX = row + (orientation.equals("v") ? dy : dx);
-            int newY = column + (orientation.equals("v") ? dx : dy);
-
-            board[newX][newY] = 1;
+    private static void rotateShip(int[][] adjustedShip, int[][] ship, int row, int column, String orientation) {
+        if (ship.length == 4) {
+            if (ship[0][0] == 0 && ship[1][0] == 0 && ship[2][0] == 1 && ship[3][0] == 2) {
+                if (orientation.equals("r") || orientation.equals("l")) {
+                    adjustedShip[0] = new int[]{row, column};
+                    adjustedShip[1] = new int[]{row, column + 1};
+                    adjustedShip[2] = new int[]{row + 1, column + 1};
+                    adjustedShip[3] = new int[]{row + 2, column + 1};
+                } else {
+                    adjustedShip[0] = new int[]{row, column};
+                    adjustedShip[1] = new int[]{row + 1, column};
+                    adjustedShip[2] = new int[]{row + 1, column + 1};
+                    adjustedShip[3] = new int[]{row + 2, column + 1};
+                }
+            }
+            else if (ship[0][0] == 6 && ship[1][0] == 6 && ship[2][0] == 7 && ship[3][0] == 7) {
+                if (orientation.equals("r") || orientation.equals("l")) {
+                    adjustedShip[0] = new int[]{row, column};
+                    adjustedShip[1] = new int[]{row, column + 1};
+                    adjustedShip[2] = new int[]{row + 1, column + 1};
+                    adjustedShip[3] = new int[]{row + 2, column + 1};
+                } else {
+                    adjustedShip[0] = new int[]{row, column};
+                    adjustedShip[1] = new int[]{row + 1, column};
+                    adjustedShip[2] = new int[]{row + 1, column + 1};
+                    adjustedShip[3] = new int[]{row + 1, column + 2};
+                }
+            } else {
+                switch (orientation) {
+                    case "r":
+                        for (int i = 0; i < ship.length; i++) {
+                            adjustedShip[i][0] = row;
+                            adjustedShip[i][1] = column + i;
+                        }
+                        break;
+                    case "l":
+                        for (int i = 0; i < ship.length; i++) {
+                            adjustedShip[i][0] = row;
+                            adjustedShip[i][1] = column - i;
+                        }
+                        break;
+                    case "d":
+                        for (int i = 0; i < ship.length; i++) {
+                            adjustedShip[i][0] = row + i;
+                            adjustedShip[i][1] = column;
+                        }
+                        break;
+                    case "u":
+                        for (int i = 0; i < ship.length; i++) {
+                            adjustedShip[i][0] = row - i;
+                            adjustedShip[i][1] = column;
+                        }
+                        break;
+                }
+            }
         }
-        printBoard(board);
     }
 
+
+    // ADMIN
     public static void printBoard(int[][] board) {
         System.out.println("Current Board:");
         for (int i = 0; i < board.length; i++) {
@@ -126,4 +163,26 @@ public class Attacks {
             System.out.println();
         }
     }
+
+    // ADMIN
+    public static List<int[][]> generateShips() {
+        List<int[][]> generateShips = new ArrayList<>();
+
+        int[][] ship_1 = {{0, 0}, {0, 1}, {0, 2}}; // ──
+        int[][] ship_2 = {{0, 0}, {0, 1}, {1, 1}, {2, 1}}; // ┐
+        int[][] ship_3 = {{3, 0}, {3, 1}, {3, 2}, {3, 3}}; // ───
+        int[][] ship_4 = {{1, 0}, {1, 1}, {1, 2}, {2, 1}}; // ┬
+        int[][] ship_5 = {{4, 0}}; // ─
+        int[][] ship_6 = {{6, 0}, {6, 1}, {7, 1}, {7, 2}}; // ┐└
+
+        generateShips.add(ship_1);
+        generateShips.add(ship_2);
+        generateShips.add(ship_3);
+        generateShips.add(ship_4);
+        generateShips.add(ship_5);
+        generateShips.add(ship_6);
+
+        return generateShips;
+    }
+
 }
